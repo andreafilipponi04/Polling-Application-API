@@ -30,11 +30,15 @@ class VoteSerializer(serializers.ModelSerializer):
         choice = attrs.get('choice')
 
         if choice.poll != poll:
-            raise serializers.ValidationError("La scelta selezionata non appartiene a questo sondaggio.")
+            raise serializers.ValidationError({
+                'choice': 'La scelta selezionata non appartiene a questo sondaggio.'
+            })
 
         if request and request.user.is_authenticated:
             if Vote.objects.filter(poll=poll, user=request.user).exists():
-                raise serializers.ValidationError("Hai già votato in questo sondaggio.")
+                raise serializers.ValidationError({
+                    'non_field_errors': ['Hai già votato in questo sondaggio.']
+                })
 
         return attrs
 

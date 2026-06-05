@@ -7,7 +7,9 @@ dj-rest-auth==7.2.0
 Django==6.0.5
 django-allauth==65.18.0
 django-cors-headers==4.9.0
+django-filter==25.2
 djangorestframework==3.17.1
+djangorestframework_simplejwt==5.5.1
 httpie==3.2.4
 idna==3.17
 markdown-it-py==4.2.0
@@ -15,6 +17,7 @@ mdurl==0.1.2
 multidict==6.7.1
 packaging==26.0
 Pygments==2.20.0
+PyJWT==2.13.0
 PySocks==1.7.1
 requests==2.34.2
 requests-toolbelt==1.0.0

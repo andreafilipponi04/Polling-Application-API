@@ -54,7 +54,7 @@ class PollAPITestCase(APITestCase):
 
         response = self.client.post(url, data, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_post_poll_allowed_for_authenticated_user(self):
         self.client.force_authenticate(user=self.user)
@@ -238,7 +238,7 @@ class PollAPITestCase(APITestCase):
 
         response = self.client.post(url, data, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_poll_results_return_correct_percentages(self):
         Vote.objects.create(
@@ -266,3 +266,81 @@ class PollAPITestCase(APITestCase):
         self.assertEqual(response.data['total_votes'], 2)
         self.assertEqual(response.data['choices'][0]['percentage'], '50.00')
         self.assertEqual(response.data['choices'][1]['percentage'], '50.00')
+
+    def test_get_jwt_token(self):
+        url = reverse('token_obtain_pair')
+        data = {
+            'username': 'testuser',
+            'password': 'testpass123'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+
+    def test_admin_can_update_any_poll(self):
+        admin_user = User.objects.create_user(
+            username='adminuser',
+            email='[email protected]',
+            password='adminpass123',
+            is_staff=True
+        )
+
+        self.client.force_authenticate(user=admin_user)
+
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        data = {
+            'question': 'Modifica da admin',
+            'is_active': True
+        }
+
+        response = self.client.put(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.poll.refresh_from_db()
+        self.assertEqual(self.poll.question, 'Modifica da admin')
+
+    def test_poll_list_is_paginated(self):
+        Poll.objects.create(question='Sondaggio 2', created_by=self.user, is_active=True)
+        Poll.objects.create(question='Sondaggio 3', created_by=self.user, is_active=True)
+        Poll.objects.create(question='Sondaggio 4', created_by=self.user, is_active=True)
+        Poll.objects.create(question='Sondaggio 5', created_by=self.user, is_active=True)
+        Poll.objects.create(question='Sondaggio 6', created_by=self.user, is_active=True)
+
+        url = reverse('poll-list-create')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('count', response.data)
+        self.assertIn('results', response.data)
+        self.assertEqual(response.data['count'], 6)
+
+    def test_poll_list_can_be_filtered_by_is_active(self):
+        Poll.objects.create(
+            question='Sondaggio inattivo',
+            created_by=self.user,
+            is_active=False
+        )
+
+        url = reverse('poll-list-create') + '?is_active=true'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['question'], 'Pizza o pasta?')
+
+    def test_poll_list_can_be_searched(self):
+        Poll.objects.create(
+            question='Gelato o torta?',
+            created_by=self.user,
+            is_active=True
+        )
+
+        url = reverse('poll-list-create') + '?search=Gelato'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['question'], 'Gelato o torta?')

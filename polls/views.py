@@ -1,17 +1,25 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, filters
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
 from .models import Poll, Vote
 from .serializers import PollSerializer, VoteSerializer, PollResultSerializer
-from .permissions import IsAuthorOrReadOnly
+from .permissions import IsAuthorOrAdminOrReadOnly
+from .filters import PollFilter
+from .pagination import PollPagination
 
 
 class PollListCreateAPIView(generics.ListCreateAPIView):
     queryset = Poll.objects.all().order_by('-created_at')
     serializer_class = PollSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PollFilter
+    search_fields = ['question']
+    ordering_fields = ['created_at', 'updated_at']
+    pagination_class = PollPagination
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -20,10 +28,10 @@ class PollListCreateAPIView(generics.ListCreateAPIView):
 class PollRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrAdminOrReadOnly]
 
 
-class VoteCreateAPIView(generics.ListCreateAPIView):
+class VoteCreateAPIView(generics.CreateAPIView):
     queryset = Vote.objects.all().order_by('-voted_at')
     serializer_class = VoteSerializer
     permission_classes = [permissions.IsAuthenticated]
