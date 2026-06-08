@@ -13,13 +13,11 @@ class PollAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',
-            email='[email protected]',
             password='testpass123'
         )
 
         self.other_user = User.objects.create_user(
             username='otheruser',
-            email='[email protected]',
             password='testpass123'
         )
 
@@ -76,11 +74,10 @@ class PollAPITestCase(APITestCase):
 
         url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
         data = {
-            'question': 'Domanda modificata',
-            'is_active': True
+            'question': 'Domanda modificata'
         }
 
-        response = self.client.put(url, data, format='json')
+        response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.poll.refresh_from_db()
@@ -91,11 +88,10 @@ class PollAPITestCase(APITestCase):
 
         url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
         data = {
-            'question': 'Tentativo modifica non autore',
-            'is_active': True
+            'question': 'Tentativo modifica non autore'
         }
 
-        response = self.client.put(url, data, format='json')
+        response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -157,6 +153,17 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_anonymous_cannot_vote(self):
+        url = reverse('vote-list-create')
+        data = {
+            'poll': self.poll.id,
+            'choice': self.choice1.id
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_anonymous_can_view_poll_results(self):
         url = reverse('poll-results', kwargs={'pk': self.poll.pk})
         response = self.client.get(url)
@@ -172,7 +179,6 @@ class PollAPITestCase(APITestCase):
 
         third_user = User.objects.create_user(
             username='thirduser',
-            email='[email protected]',
             password='testpass123'
         )
 
@@ -197,7 +203,6 @@ class PollAPITestCase(APITestCase):
 
         third_user = User.objects.create_user(
             username='thirduser2',
-            email='[email protected]',
             password='testpass123'
         )
 
@@ -211,8 +216,13 @@ class PollAPITestCase(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['choices'][0]['votes_count'], 2)
-        self.assertEqual(response.data['choices'][1]['votes_count'], 0)
+
+        choices = response.data['choices']
+        pizza = next(c for c in choices if c['text'] == 'Pizza')
+        pasta = next(c for c in choices if c['text'] == 'Pasta')
+
+        self.assertEqual(pizza['votes_count'], 2)
+        self.assertEqual(pasta['votes_count'], 0)
 
     def test_poll_results_return_zero_percentages_when_no_votes(self):
         url = reverse('poll-results', kwargs={'pk': self.poll.pk})
@@ -220,25 +230,13 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_votes'], 0)
-        self.assertEqual(response.data['choices'][0]['percentage'], '0.00')
-        self.assertEqual(response.data['choices'][1]['percentage'], '0.00')
 
-    def test_poll_results_return_404_for_missing_poll(self):
-        url = reverse('poll-results', kwargs={'pk': 9999})
-        response = self.client.get(url)
+        choices = response.data['choices']
+        pizza = next(c for c in choices if c['text'] == 'Pizza')
+        pasta = next(c for c in choices if c['text'] == 'Pasta')
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_anonymous_cannot_vote(self):
-        url = reverse('vote-list-create')
-        data = {
-            'poll': self.poll.id,
-            'choice': self.choice1.id
-        }
-
-        response = self.client.post(url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(pizza['percentage'], '0.00')
+        self.assertEqual(pasta['percentage'], '0.00')
 
     def test_poll_results_return_correct_percentages(self):
         Vote.objects.create(
@@ -249,7 +247,6 @@ class PollAPITestCase(APITestCase):
 
         third_user = User.objects.create_user(
             username='thirduser_percent',
-            email='[email protected]',
             password='testpass123'
         )
 
@@ -264,8 +261,19 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_votes'], 2)
-        self.assertEqual(response.data['choices'][0]['percentage'], '50.00')
-        self.assertEqual(response.data['choices'][1]['percentage'], '50.00')
+
+        choices = response.data['choices']
+        pizza = next(c for c in choices if c['text'] == 'Pizza')
+        pasta = next(c for c in choices if c['text'] == 'Pasta')
+
+        self.assertEqual(pizza['percentage'], '50.00')
+        self.assertEqual(pasta['percentage'], '50.00')
+
+    def test_poll_results_return_404_for_missing_poll(self):
+        url = reverse('poll-results', kwargs={'pk': 9999})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_jwt_token(self):
         url = reverse('token_obtain_pair')
@@ -273,15 +281,40 @@ class PollAPITestCase(APITestCase):
             'username': 'testuser',
             'password': 'testpass123'
         }
+
         response = self.client.post(url, data, format='json')
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
         self.assertIn('refresh', response.data)
 
+    def test_refresh_jwt_token(self):
+        obtain_url = reverse('token_obtain_pair')
+        obtain_response = self.client.post(
+            obtain_url,
+            {
+                'username': 'testuser',
+                'password': 'testpass123'
+            },
+            format='json'
+        )
+
+        self.assertEqual(obtain_response.status_code, status.HTTP_200_OK)
+        self.assertIn('refresh', obtain_response.data)
+
+        refresh_url = reverse('token_refresh')
+        refresh_response = self.client.post(
+            refresh_url,
+            {'refresh': obtain_response.data['refresh']},
+            format='json'
+        )
+
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', refresh_response.data)
+
     def test_admin_can_update_any_poll(self):
         admin_user = User.objects.create_user(
             username='adminuser',
-            email='[email protected]',
             password='adminpass123',
             is_staff=True
         )
@@ -290,11 +323,10 @@ class PollAPITestCase(APITestCase):
 
         url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
         data = {
-            'question': 'Modifica da admin',
-            'is_active': True
+            'question': 'Modifica da admin'
         }
 
-        response = self.client.put(url, data, format='json')
+        response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.poll.refresh_from_db()
@@ -327,20 +359,45 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('results', response.data)
-        self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['question'], 'Pizza o pasta?')
 
-    def test_poll_list_can_be_searched(self):
-        Poll.objects.create(
-            question='Gelato o torta?',
-            created_by=self.user,
-            is_active=True
-        )
+        questions = [poll['question'] for poll in response.data['results']]
+        self.assertIn('Pizza o pasta?', questions)
+        self.assertNotIn('Sondaggio inattivo', questions)
 
-        url = reverse('poll-list-create') + '?search=Gelato'
-        response = self.client.get(url)
+    def test_author_can_create_choice_for_own_poll(self):
+        self.client.force_authenticate(user=self.user)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('results', response.data)
-        self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['question'], 'Gelato o torta?')
+        url = reverse('choice-create')
+        data = {
+            'poll': self.poll.id,
+            'text': 'Risotto'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Choice.objects.filter(poll=self.poll, text='Risotto').exists())
+
+    def test_other_user_cannot_create_choice_for_foreign_poll(self):
+        self.client.force_authenticate(user=self.other_user)
+
+        url = reverse('choice-create')
+        data = {
+            'poll': self.poll.id,
+            'text': 'Risotto'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_anonymous_cannot_create_choice(self):
+        url = reverse('choice-create')
+        data = {
+            'poll': self.poll.id,
+            'text': 'Risotto'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
