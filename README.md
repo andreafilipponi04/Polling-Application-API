@@ -1,6 +1,6 @@
 # [PROJECT_TITLE]
 
-**Studenti:** [STUDENT_NAME]  
+**Studente:** Andrea Filipponi  
 **Project type:** REST API  
 **Framework:** Django + Django REST Framework  
 **Repository:** [REPOSITORY_URL]  
@@ -9,9 +9,9 @@
 ## Descrizione
 
 Questo progetto è una REST API per una **Polling Application** sviluppata con Django REST Framework.  
-L'applicazione permette di creare sondaggi, aggiungere scelte, votare, visualizzare i risultati e gestire i sondaggi in base ai permessi dell'utente autenticato [file:8].
+L'applicazione permette di creare sondaggi, aggiungere scelte, votare, visualizzare i risultati e gestire i sondaggi in base ai permessi dell'utente autenticato.
 
-L'obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP [file:8].
+L'obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP.
 
 ## Funzionalità principali
 
@@ -35,13 +35,13 @@ L'obiettivo del progetto è realizzare un back-end API-first con autenticazione 
 - Non può creare sondaggi.
 - Non può votare.
 - Non può creare scelte.
-- Non può modificare o eliminare sondaggi [file:8].
+- Non può modificare o eliminare sondaggi.
 
 ### Authenticated user
 - Può creare un sondaggio.
 - Può votare una sola volta per ciascun sondaggio.
 - Può aggiungere scelte solo ai sondaggi creati da lui.
-- Può modificare o eliminare solo i propri sondaggi [file:8].
+- Può modificare o eliminare solo i propri sondaggi.
 
 ### Admin / superuser
 - Può gestire tutti i sondaggi tramite i permessi amministrativi del progetto.
@@ -74,7 +74,7 @@ Il repository include il database SQLite:
 
 - `db.sqlite3`
 
-Il database contiene dati demo e account già pronti per testare l'applicazione senza dover creare tutto da zero [file:8].
+Il database contiene dati demo e account già pronti per testare l'applicazione senza dover creare tutto da zero.
 
 ## Demo accounts
 
@@ -88,14 +88,14 @@ Il database contiene dati demo e account già pronti per testare l'applicazione 
 
 ## Installazione locale
 
-1. Clonare il repository:
+1. Clonare la repository:
 
 ```bash
 git clone [REPOSITORY_URL]
 cd [PROJECT_TITLE]
 ```
 
-2. Creare e attivare un ambiente virtuale:
+2. Creare e attivare un ambiente virtuale [usato anaconda]:
 
 ```bash
 python -m venv venv
@@ -139,7 +139,7 @@ http://127.0.0.1:8000/
 
 ## Autenticazione JWT
 
-L'API usa autenticazione JWT per gli endpoint protetti [file:8].
+L'API usa autenticazione JWT per gli endpoint protetti.
 
 ### Ottenere access e refresh token
 
@@ -471,7 +471,7 @@ Campi:
 
 ## Workflow completo di test con HTTPie
 
-> Installazione HTTPie: [https://httpie.io/](https://httpie.io/) [file:8]
+> Installazione HTTPie: [https://httpie.io/](https://httpie.io/).
 
 ### 1. Ottenere i token
 
