@@ -1,4 +1,4 @@
-# [PROJECT_TITLE]
+# [POLLING APPLICATION API]
 
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
