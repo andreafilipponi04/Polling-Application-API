@@ -4,6 +4,7 @@ from .views import (
     PollRetrieveUpdateDestroyAPIView,
     VoteCreateAPIView,
     PollResultsAPIView,
+    ChoiceCreateAPIView
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path('polls/<int:pk>/', PollRetrieveUpdateDestroyAPIView.as_view(), name='poll-detail'),
     path('polls/<int:pk>/results/', PollResultsAPIView.as_view(), name='poll-results'),
     path('votes/', VoteCreateAPIView.as_view(), name='vote-list-create'),
+    path('choices/', ChoiceCreateAPIView.as_view(), name='choice-create'),
 ]

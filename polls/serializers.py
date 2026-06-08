@@ -5,7 +5,7 @@ from .models import Poll, Choice, Vote
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = ['id', 'text']
+        fields = ['id', 'poll', 'text']
 
 
 class PollSerializer(serializers.ModelSerializer):
