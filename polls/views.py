@@ -17,10 +17,15 @@ class PollListCreateAPIView(generics.ListCreateAPIView):
     queryset = Poll.objects.all().order_by('-created_at')
     serializer_class = PollSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    
+    # MODIFICATO: Aggiunto filters.SearchFilter alla lista dei backends
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = PollFilter
     ordering_fields = ['created_at', 'updated_at']
     pagination_class = PollPagination
+    
+    # MODIFICATO: Configurato i campi per consentire la ricerca parziale su domande e scelte
+    search_fields = ['question', 'choices__text']
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

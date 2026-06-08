@@ -401,3 +401,28 @@ class PollAPITestCase(APITestCase):
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # --- AGGIORNATO: NUOVI TEST SU SEARCH ---
+    def test_poll_list_search_by_question_partial(self):
+        url = reverse('poll-list-create') + '?search=past'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        questions = [poll['question'] for poll in response.data['results']]
+        self.assertIn('Pizza o pasta?', questions)
+
+    def test_poll_list_search_by_choice_text_partial(self):
+        # Cerchiamo parte del testo di una delle Choice collegate ('Pizz')
+        url = reverse('poll-list-create') + '?search=Pizz'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        questions = [poll['question'] for poll in response.data['results']]
+        self.assertIn('Pizza o pasta?', questions)
+
+    def test_poll_list_search_no_results(self):
+        url = reverse('poll-list-create') + '?search=Sushi'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 0)
