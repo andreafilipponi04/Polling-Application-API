@@ -78,8 +78,6 @@ Il database contiene dati demo e account già pronti per testare l’applicazion
 
 ## Demo accounts
 
-> Sostituire o completare se necessario.
-
 | Username | Password | Ruolo |
 |---|---|---|
 | admin | password | Admin / superuser |
