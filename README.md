@@ -3,7 +3,7 @@
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
 **Framework:** Django + Django REST Framework  
-**Repository:** [REPOSITORY_URL]  
+**Repository:** https://github.com/andreafilipponi04/Polling-Application-API
 **Deployment:** [DEPLOYMENT_URL]
 
 ## Descrizione
@@ -91,7 +91,7 @@ Il database contiene dati demo e account già pronti per testare l’applicazion
 ### 1. Clonare la repository
 
 ```bash
-git clone [REPOSITORY_URL]
+git clone https://github.com/andreafilipponi04/Polling-Application-API
 cd [PROJECT_TITLE]
 ```
 
@@ -653,6 +653,4 @@ http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza"
 Sostituire questi valori prima della consegna finale:
 
 - `[PROJECT_TITLE]`
-- `[STUDENT_NAME]`
-- `[REPOSITORY_URL]`
 - `[DEPLOYMENT_URL]`
