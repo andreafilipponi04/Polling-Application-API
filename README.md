@@ -1,4 +1,4 @@
-# [POLLING APPLICATION API]
+# POLLING APPLICATION API
 
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
@@ -9,9 +9,9 @@
 ## Descrizione
 
 Questo progetto è una REST API per una **Polling Application** sviluppata con Django REST Framework.  
-L'applicazione permette di creare sondaggi, aggiungere scelte, votare, visualizzare i risultati e gestire i sondaggi in base ai permessi dell'utente autenticato.
+L’applicazione permette di creare sondaggi, aggiungere scelte, votare, visualizzare i risultati e gestire i sondaggi in base ai permessi dell’utente autenticato.
 
-L'obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP.
+L’obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP.
 
 ## Funzionalità principali
 
@@ -24,7 +24,7 @@ L'obiettivo del progetto è realizzare un back-end API-first con autenticazione 
 - Blocco del doppio voto sullo stesso sondaggio.
 - Validazione che la scelta votata appartenga davvero al sondaggio selezionato.
 - Creazione di nuove scelte per un sondaggio solo da parte del creatore del sondaggio.
-- Supporto a filtri, ordinamento e paginazione sulla lista dei sondaggi.
+- Supporto a filtri, ricerca, ordinamento e paginazione sulla lista dei sondaggi.
 
 ## Ruoli e permessi
 
@@ -74,28 +74,37 @@ Il repository include il database SQLite:
 
 - `db.sqlite3`
 
-Il database contiene dati demo e account già pronti per testare l'applicazione senza dover creare tutto da zero.
+Il database contiene dati demo e account già pronti per testare l’applicazione senza dover creare tutto da zero.
 
 ## Demo accounts
 
 > Sostituire o completare se necessario.
 
 | Username | Password | Ruolo |
-|---------|----------|-------|
+|---|---|---|
 | admin | password | Admin / superuser |
 | user1 | provaprova | Authenticated user |
 | user2 | provaprova | Authenticated user |
 
 ## Installazione locale
 
-1. Clonare la repository:
+### 1. Clonare la repository
 
 ```bash
 git clone [REPOSITORY_URL]
 cd [PROJECT_TITLE]
 ```
 
-2. Creare e attivare un ambiente virtuale [usato anaconda]:
+### 2. Creare e attivare l’ambiente
+
+#### Opzione consigliata: Anaconda
+
+```bash
+conda create --name django python=3.10
+conda activate django
+```
+
+#### Opzione alternativa: venv
 
 ```bash
 python -m venv venv
@@ -113,25 +122,25 @@ macOS / Linux:
 source venv/bin/activate
 ```
 
-3. Installare le dipendenze:
+### 3. Installare le dipendenze
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Applicare le migrazioni:
+### 4. Applicare le migrazioni
 
 ```bash
 python manage.py migrate
 ```
 
-5. Avviare il server:
+### 5. Avviare il server
 
 ```bash
 python manage.py runserver
 ```
 
-6. Base URL locale:
+### 6. Base URL locale
 
 ```text
 http://127.0.0.1:8000/
@@ -139,7 +148,7 @@ http://127.0.0.1:8000/
 
 ## Autenticazione JWT
 
-L'API usa autenticazione JWT per gli endpoint protetti.
+L’API usa autenticazione JWT per gli endpoint protetti.
 
 ### Ottenere access e refresh token
 
@@ -194,8 +203,8 @@ Authorization: Bearer ACCESS_TOKEN
 ## Endpoint principali
 
 | Metodo | Endpoint | Auth | Ruolo | Descrizione |
-|-------|----------|------|-------|-------------|
-| GET | `/api/polls/` | No | Anonymous / Authenticated | Lista dei sondaggi con paginazione, filtri e ordinamento |
+|---|---|---|---|---|
+| GET | `/api/polls/` | No | Anonymous / Authenticated | Lista dei sondaggi con paginazione, filtri, ricerca e ordinamento |
 | POST | `/api/polls/` | Sì | Authenticated | Crea un nuovo sondaggio |
 | GET | `/api/polls/<id>/` | No | Anonymous / Authenticated | Dettaglio di un sondaggio |
 | PUT | `/api/polls/<id>/` | Sì | Owner / Admin | Aggiorna completamente un sondaggio |
@@ -205,7 +214,7 @@ Authorization: Bearer ACCESS_TOKEN
 | POST | `/api/votes/` | Sì | Authenticated | Registra un voto |
 | POST | `/api/choices/` | Sì | Authenticated | Aggiunge una scelta a un proprio sondaggio |
 | POST | `/api/token/` | No | Anonymous / Authenticated | Ottiene access e refresh token |
-| POST | `/api/token/refresh/` | No | Anonymous / Authenticated | Rinnova l'access token |
+| POST | `/api/token/refresh/` | No | Anonymous / Authenticated | Rinnova l’access token |
 
 ## Endpoint dettagliati
 
@@ -216,12 +225,17 @@ Authorization: Bearer ACCESS_TOKEN
 Accesso pubblico.
 
 Possibili query params:
-- `[FILTERS_PLACEHOLDER]`
+
+- `is_active=true` o `is_active=false`
+- `question=testo`
+- `created_by=username`
+- `search=testo`
 - `ordering=created_at`
 - `ordering=-created_at`
 - `ordering=updated_at`
 - `ordering=-updated_at`
 - `page=1`
+- `page_size=10`
 
 Esempio:
 
@@ -273,7 +287,7 @@ http GET http://127.0.0.1:8000/api/polls/1/
 **PATCH** `/api/polls/<id>/`
 
 Richiede autenticazione JWT.  
-Consentito solo al creatore del sondaggio o all'admin.
+Consentito solo al creatore del sondaggio o all’admin.
 
 Body JSON di esempio:
 
@@ -292,8 +306,8 @@ question="Domanda aggiornata"
 ```
 
 Risposte attese:
-- `200 OK` se l'utente è autorizzato
-- `403 Forbidden` se l'utente autenticato non è proprietario
+- `200 OK` se l’utente è autorizzato
+- `403 Forbidden` se l’utente autenticato non è proprietario
 - `401 Unauthorized` se manca autenticazione
 
 ### 5. Delete poll
@@ -301,7 +315,7 @@ Risposte attese:
 **DELETE** `/api/polls/<id>/`
 
 Richiede autenticazione JWT.  
-Consentito solo al creatore del sondaggio o all'admin.
+Consentito solo al creatore del sondaggio o all’admin.
 
 Esempio:
 
@@ -432,7 +446,7 @@ text="Nuova scelta"
 
 Possibili risposte:
 - `201 Created`
-- `403 Forbidden` se il sondaggio non appartiene all'utente
+- `403 Forbidden` se il sondaggio non appartiene all’utente
 - `401 Unauthorized` se non autenticato
 
 Messaggio previsto in caso di permesso negato:
@@ -606,6 +620,7 @@ La lista dei sondaggi supporta:
 - ordinamento per `created_at`
 - ordinamento per `updated_at`
 - filtri definiti in `PollFilter`
+- ricerca testuale su `question` e sul testo delle `choices`
 
 Esempi:
 
@@ -618,13 +633,13 @@ http GET "http://127.0.0.1:8000/api/polls/?page=1"
 ```
 
 ```bash
-http GET "http://127.0.0.1:8000/api/polls/?[FILTER_QUERY_EXAMPLE]"
+http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza"
 ```
 
 ## Status code principali
 
 | Codice | Significato |
-|-------|-------------|
+|---|---|
 | 200 | Richiesta completata con successo |
 | 201 | Risorsa creata correttamente |
 | 204 | Risorsa eliminata correttamente |
@@ -632,7 +647,6 @@ http GET "http://127.0.0.1:8000/api/polls/?[FILTER_QUERY_EXAMPLE]"
 | 401 | Utente non autenticato |
 | 403 | Utente autenticato ma non autorizzato |
 | 404 | Risorsa non trovata |
-
 
 ## Placeholder da completare
 
@@ -642,5 +656,3 @@ Sostituire questi valori prima della consegna finale:
 - `[STUDENT_NAME]`
 - `[REPOSITORY_URL]`
 - `[DEPLOYMENT_URL]`
-- `[FILTERS_PLACEHOLDER]`
-- `[FILTER_QUERY_EXAMPLE]`
