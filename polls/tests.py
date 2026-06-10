@@ -641,3 +641,27 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 3)
+
+    def test_cannot_vote_on_closed_poll(self):
+        self.client.force_authenticate(user=self.user)
+
+        closed_poll = Poll.objects.create(
+            question="Sondaggio chiuso",
+            created_by=self.user,
+            is_active=False
+        )
+
+        choice = Choice.objects.create(
+            poll=closed_poll,
+            text="Opzione 1"
+        )
+
+        payload = {
+            "poll": closed_poll.id,
+            "choice": choice.id
+        }
+
+        response = self.client.post("/api/votes/", payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("poll", response.data)

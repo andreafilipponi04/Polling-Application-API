@@ -36,6 +36,11 @@ class VoteSerializer(serializers.ModelSerializer):
         poll = attrs.get('poll')
         choice = attrs.get('choice')
 
+        if not poll.is_active:
+            raise serializers.ValidationError({
+                'poll': 'Questo sondaggio è chiuso e non accetta più voti.'
+            })
+
         if choice.poll != poll:
             raise serializers.ValidationError({
                 'choice': 'La scelta selezionata non appartiene a questo sondaggio.'
