@@ -3,8 +3,8 @@
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
 **Framework:** Django + Django REST Framework  
-**Repository:** https://github.com/andreafilipponi04/Polling-Application-API  
-**Deployment:** [DEPLOYMENT_URL]
+**Repository:** [https://github.com/andreafilipponi04/Polling-Application-API](https://github.com/andreafilipponi04/Polling-Application-API)  
+**Deployment:** Not deployed
 
 ## Descrizione
 
@@ -18,6 +18,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Visualizzazione pubblica della lista dei sondaggi.
 - Visualizzazione pubblica del dettaglio di un sondaggio.
 - Visualizzazione pubblica dei risultati di un sondaggio.
+- Registrazione di nuovi utenti tramite endpoint API pubblico.
 - Creazione di nuovi sondaggi da parte di utenti autenticati.
 - Modifica ed eliminazione dei propri sondaggi.
 - Voto autenticato su un sondaggio.
@@ -32,6 +33,8 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Può leggere la lista dei sondaggi.
 - Può leggere il dettaglio di un sondaggio.
 - Può vedere i risultati.
+- Può registrare un nuovo account.
+- Può ottenere token JWT tramite credenziali valide.
 - Non può creare sondaggi.
 - Non può votare.
 - Non può creare scelte.
@@ -59,7 +62,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 ## Struttura del progetto
 
 ```text
-[PROJECT_TITLE]/
+Polling-Application-API/
 ├── config/
 ├── polls/
 ├── db.sqlite3
@@ -90,7 +93,7 @@ Il database contiene dati demo e account già pronti per testare l’applicazion
 
 ```bash
 git clone https://github.com/andreafilipponi04/Polling-Application-API
-cd [PROJECT_TITLE]
+cd Polling-Application-API
 ```
 
 ### 2. Creare e attivare l’ambiente
@@ -144,6 +147,35 @@ python manage.py runserver
 http://127.0.0.1:8000/
 ```
 
+## Registrazione utenti
+
+L’API espone un endpoint pubblico per la registrazione di nuovi utenti.
+
+### Creare un nuovo account
+
+**POST** `/api/register/`
+
+Body JSON:
+
+```json
+{
+  "username": "newuser",
+  "password": "Password123!",
+  "password2": "Password123!"
+}
+```
+
+Esempio HTTPie:
+
+```bash
+http POST http://127.0.0.1:8000/api/register/ username="newuser" password="Password123!" password2="Password123!"
+```
+
+Risposta attesa:
+- `201 Created`
+
+Dopo la registrazione, l’utente può ottenere i token JWT tramite `/api/token/`.
+
 ## Autenticazione JWT
 
 L’API usa autenticazione JWT per gli endpoint protetti.
@@ -156,8 +188,8 @@ Body JSON:
 
 ```json
 {
-  "username": "user1",
-  "password": "provaprova"
+  "username": "newuser",
+  "password": "Password123!"
 }
 ```
 
@@ -190,6 +222,18 @@ Esempio risposta:
 }
 ```
 
+### Verificare un token
+
+**POST** `/api/token/verify/`
+
+Body JSON:
+
+```json
+{
+  "token": "ACCESS_TOKEN"
+}
+```
+
 ### Uso del token nelle richieste protette
 
 Header:
@@ -202,6 +246,7 @@ Authorization: Bearer ACCESS_TOKEN
 
 | Metodo | Endpoint | Auth | Ruolo | Descrizione |
 |---|---|---|---|---|
+| POST | `/api/register/` | No | Anonymous / Authenticated | Registra un nuovo utente |
 | GET | `/api/polls/` | No | Anonymous / Authenticated | Lista dei sondaggi con paginazione, filtri, ricerca e ordinamento |
 | POST | `/api/polls/` | Sì | Authenticated | Crea un nuovo sondaggio |
 | GET | `/api/polls/<id>/` | No | Anonymous / Authenticated | Dettaglio di un sondaggio |
@@ -213,10 +258,39 @@ Authorization: Bearer ACCESS_TOKEN
 | POST | `/api/choices/` | Sì | Authenticated | Aggiunge una scelta a un proprio sondaggio |
 | POST | `/api/token/` | No | Anonymous / Authenticated | Ottiene access e refresh token |
 | POST | `/api/token/refresh/` | No | Anonymous / Authenticated | Rinnova l’access token |
+| POST | `/api/token/verify/` | No | Anonymous / Authenticated | Verifica la validità di un token |
 
 ## Endpoint dettagliati
 
-### 1. List polls
+### 1. Register user
+
+**POST** `/api/register/`
+
+Accesso pubblico.
+
+Body JSON di esempio:
+
+```json
+{
+  "username": "newuser",
+  "password": "Password123!",
+  "password2": "Password123!"
+}
+```
+
+Esempio HTTPie:
+
+```bash
+http POST http://127.0.0.1:8000/api/register/ username="newuser" password="Password123!" password2="Password123!"
+```
+
+Risposte attese:
+- `201 Created`
+- `400 Bad Request` se username già esistente
+- `400 Bad Request` se le password non coincidono
+- `400 Bad Request` se la password non supera i validator Django
+
+### 2. List polls
 
 **GET** `/api/polls/`
 
@@ -224,8 +298,8 @@ Accesso pubblico.
 
 Possibili query params:
 
-- `is_active=true` o `is_active=false`
 - `question=testo`
+- `is_active=true` o `is_active=false`
 - `created_by=username`
 - `search=testo`
 - `ordering=created_at`
@@ -233,7 +307,7 @@ Possibili query params:
 - `ordering=updated_at`
 - `ordering=-updated_at`
 - `page=1`
-- `page_size=10`
+- `page_size=5`
 
 Esempio:
 
@@ -241,7 +315,7 @@ Esempio:
 http GET http://127.0.0.1:8000/api/polls/
 ```
 
-### 2. Create poll
+### 3. Create poll
 
 **POST** `/api/polls/`
 
@@ -259,16 +333,13 @@ Body JSON di esempio:
 Esempio HTTPie:
 
 ```bash
-http POST http://127.0.0.1:8000/api/polls/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-question="Qual è il tuo linguaggio preferito?" \
-is_active:=true
+http POST http://127.0.0.1:8000/api/polls/ Authorization:"Bearer ACCESS_TOKEN" question="Qual è il tuo linguaggio preferito?" is_active:=true
 ```
 
 Risposta attesa:
 - `201 Created`
 
-### 3. Poll detail
+### 4. Poll detail
 
 **GET** `/api/polls/<id>/`
 
@@ -280,7 +351,7 @@ Esempio:
 http GET http://127.0.0.1:8000/api/polls/1/
 ```
 
-### 4. Update poll
+### 5. Update poll
 
 **PATCH** `/api/polls/<id>/`
 
@@ -298,9 +369,7 @@ Body JSON di esempio:
 Esempio:
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-question="Domanda aggiornata"
+http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN" question="Domanda aggiornata"
 ```
 
 Risposte attese:
@@ -308,7 +377,7 @@ Risposte attese:
 - `403 Forbidden` se l’utente autenticato non è proprietario
 - `401 Unauthorized` se manca autenticazione
 
-### 5. Delete poll
+### 6. Delete poll
 
 **DELETE** `/api/polls/<id>/`
 
@@ -318,8 +387,7 @@ Consentito solo al creatore del sondaggio o all’admin.
 Esempio:
 
 ```bash
-http DELETE http://127.0.0.1:8000/api/polls/1/ \
-Authorization:"Bearer ACCESS_TOKEN"
+http DELETE http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN"
 ```
 
 Risposte attese:
@@ -327,7 +395,7 @@ Risposte attese:
 - `403 Forbidden`
 - `401 Unauthorized`
 
-### 6. Poll results
+### 7. Poll results
 
 **GET** `/api/polls/<id>/results/`
 
@@ -363,7 +431,7 @@ Esempio HTTPie:
 http GET http://127.0.0.1:8000/api/polls/1/results/
 ```
 
-### 7. Create vote
+### 8. Create vote
 
 **POST** `/api/votes/`
 
@@ -381,10 +449,7 @@ Body JSON di esempio:
 Esempio HTTPie:
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-choice:=2
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=2
 ```
 
 Validazioni:
@@ -397,27 +462,7 @@ Possibili risposte:
 - `400 Bad Request` se la choice non appartiene al poll
 - `401 Unauthorized` se non autenticato
 
-Esempio errore doppio voto:
-
-```json
-{
-  "non_field_errors": [
-    "Hai già votato in questo sondaggio."
-  ]
-}
-```
-
-Esempio errore choice non valida:
-
-```json
-{
-  "choice": [
-    "La scelta selezionata non appartiene a questo sondaggio."
-  ]
-}
-```
-
-### 8. Create choice
+### 9. Create choice
 
 **POST** `/api/choices/`
 
@@ -436,10 +481,7 @@ Body JSON di esempio:
 Esempio HTTPie:
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-text="Nuova scelta"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Nuova scelta"
 ```
 
 Possibili risposte:
@@ -447,112 +489,108 @@ Possibili risposte:
 - `403 Forbidden` se il sondaggio non appartiene all’utente
 - `401 Unauthorized` se non autenticato
 
-Messaggio previsto in caso di permesso negato:
-
-```json
-{
-  "detail": "Puoi aggiungere scelte solo ai sondaggi che hai creato tu."
-}
-```
-
-## Serializer e rappresentazione JSON
-
-### Poll
-Campi principali restituiti dal serializer:
-- `id`
-- `question`
-- `created_by`
-- `created_at`
-- `updated_at`
-- `is_active`
-- `choices` (nested, read-only)
-
-### Choice
-Campi:
-- `id`
-- `poll`
-- `text`
-
-### Vote
-Campi:
-- `id`
-- `poll`
-- `choice`
-- `user`
-- `voted_at`
-
 ## Workflow completo di test con HTTPie
 
 > Installazione HTTPie: [https://httpie.io/](https://httpie.io/).
 
-### 1. Ottenere i token
+### 1. Registrare un nuovo utente
 
 ```bash
-http POST http://127.0.0.1:8000/api/token/ username=user1 password=provaprova
+http POST http://127.0.0.1:8000/api/register/ username="newuser" password="Password123!" password2="Password123!"
+```
+
+### 2. Ottenere i token
+
+```bash
+http POST http://127.0.0.1:8000/api/token/ username=newuser password="Password123!"
 ```
 
 Copiare il valore di `access` e salvarlo come `ACCESS_TOKEN`.
 
-### 2. Leggere i sondaggi pubblici
+### 3. Leggere i sondaggi pubblici
 
 ```bash
 http GET http://127.0.0.1:8000/api/polls/
 ```
 
-### 3. Creare un nuovo sondaggio
+### 4. Creare un nuovo sondaggio
 
 ```bash
-http POST http://127.0.0.1:8000/api/polls/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-question="Sondaggio demo" \
-is_active:=true
+http POST http://127.0.0.1:8000/api/polls/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo" is_active:=true
 ```
 
-### 4. Aggiungere una scelta al sondaggio
+### 5. Aggiungere una scelta al sondaggio
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-text="Opzione A"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Opzione A"
 ```
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-text="Opzione B"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Opzione B"
 ```
 
-### 5. Votare
+### 6. Votare
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-choice:=1
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=1
 ```
 
-### 6. Vedere i risultati
+### 7. Vedere i risultati
 
 ```bash
 http GET http://127.0.0.1:8000/api/polls/1/results/
 ```
 
-### 7. Aggiornare il proprio sondaggio
+### 8. Aggiornare il proprio sondaggio
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-question="Sondaggio demo aggiornato"
+http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo aggiornato"
 ```
 
-### 8. Eliminare il proprio sondaggio
+### 9. Eliminare il proprio sondaggio
 
 ```bash
-http DELETE http://127.0.0.1:8000/api/polls/1/ \
-Authorization:"Bearer ACCESS_TOKEN"
+http DELETE http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN"
 ```
+
+## Scenario di test della registrazione
+
+### Caso 1: registrazione corretta
+
+```bash
+http POST http://127.0.0.1:8000/api/register/ username="utenteprova" password="Password123!" password2="Password123!"
+```
+
+Risposta attesa:
+- `201 Created`
+
+### Caso 2: password non coincidenti
+
+```bash
+http POST http://127.0.0.1:8000/api/register/ username="utenteerrore" password="Password123!" password2="Password456!"
+```
+
+Risposta attesa:
+- `400 Bad Request`
+
+### Caso 3: username già esistente
+
+```bash
+http POST http://127.0.0.1:8000/api/register/ username="user1" password="Password123!" password2="Password123!"
+```
+
+Risposta attesa:
+- `400 Bad Request`
+
+### Caso 4: ottenere JWT dopo registrazione
+
+```bash
+http POST http://127.0.0.1:8000/api/token/ username="utenteprova" password="Password123!"
+```
+
+Risposta attesa:
+- `200 OK`
+- risposta JSON con `refresh` e `access`
 
 ## Scenario di test dei permessi
 
@@ -575,9 +613,7 @@ http POST http://127.0.0.1:8000/api/token/ username=user2 password=provaprova
 ```
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ \
-Authorization:"Bearer USER2_ACCESS_TOKEN" \
-question="Tentativo non autorizzato"
+http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer USER2_ACCESS_TOKEN" question="Tentativo non autorizzato"
 ```
 
 Risposta attesa:
@@ -588,10 +624,7 @@ Risposta attesa:
 Dopo aver già votato una volta:
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-choice:=1
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=1
 ```
 
 Risposta attesa:
@@ -600,10 +633,7 @@ Risposta attesa:
 ### Caso 4: scelta non appartenente al sondaggio
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ \
-Authorization:"Bearer ACCESS_TOKEN" \
-poll:=1 \
-choice:=999
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=999
 ```
 
 Risposta attesa:
@@ -611,19 +641,39 @@ Risposta attesa:
 
 > Sostituire `999` con una `choice` reale appartenente a un altro sondaggio per testare correttamente questa validazione.
 
-## Filtri, ordinamento e paginazione
+## Filtri, ricerca, ordinamento e paginazione
 
 La lista dei sondaggi supporta:
-- paginazione personalizzata tramite `PollPagination`
-- ordinamento per `created_at`
-- ordinamento per `updated_at`
 - filtri definiti in `PollFilter`
 - ricerca testuale su `question` e sul testo delle `choices`
+- ordinamento per `created_at`
+- ordinamento per `updated_at`
+- paginazione personalizzata tramite `PollPagination`
 
 Esempi:
 
 ```bash
+http GET "http://127.0.0.1:8000/api/polls/?question=python"
+```
+
+```bash
+http GET "http://127.0.0.1:8000/api/polls/?is_active=true"
+```
+
+```bash
+http GET "http://127.0.0.1:8000/api/polls/?created_by=user1"
+```
+
+```bash
+http GET "http://127.0.0.1:8000/api/polls/?search=python"
+```
+
+```bash
 http GET "http://127.0.0.1:8000/api/polls/?ordering=-created_at"
+```
+
+```bash
+http GET "http://127.0.0.1:8000/api/polls/?ordering=updated_at"
 ```
 
 ```bash
@@ -631,7 +681,11 @@ http GET "http://127.0.0.1:8000/api/polls/?page=1"
 ```
 
 ```bash
-http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza"
+http GET "http://127.0.0.1:8000/api/polls/?page=2&page_size=10"
+```
+
+```bash
+http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza&ordering=-created_at"
 ```
 
 ## Status code principali
@@ -645,10 +699,3 @@ http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza"
 | 401 | Utente non autenticato |
 | 403 | Utente autenticato ma non autorizzato |
 | 404 | Risorsa non trovata |
-
-## Placeholder da completare
-
-Sostituire questi valori prima della consegna finale:
-
-- `[PROJECT_TITLE]`
-- `[DEPLOYMENT_URL]`

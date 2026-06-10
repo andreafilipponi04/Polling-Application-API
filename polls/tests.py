@@ -37,6 +37,68 @@ class PollAPITestCase(APITestCase):
             text='Pasta'
         )
 
+    def test_register_user_success(self):
+        url = reverse('register')
+        data = {
+            'username': 'newuser',
+            'password': 'StrongPass123!',
+            'password2': 'StrongPass123!'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(username='newuser').exists())
+
+    def test_register_user_password_mismatch(self):
+        url = reverse('register')
+        data = {
+            'username': 'newuser2',
+            'password': 'StrongPass123!',
+            'password2': 'DifferentPass123!'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password2', response.data)
+
+    def test_register_user_duplicate_username(self):
+        url = reverse('register')
+        data = {
+            'username': 'testuser',
+            'password': 'StrongPass123!',
+            'password2': 'StrongPass123!'
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+
+    def test_register_then_get_jwt_token(self):
+        register_url = reverse('register')
+        register_data = {
+            'username': 'jwtuser',
+            'password': 'StrongPass123!',
+            'password2': 'StrongPass123!'
+        }
+
+        register_response = self.client.post(register_url, register_data, format='json')
+        self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
+
+        token_url = reverse('token_obtain_pair')
+        token_data = {
+            'username': 'jwtuser',
+            'password': 'StrongPass123!'
+        }
+
+        token_response = self.client.post(token_url, token_data, format='json')
+
+        self.assertEqual(token_response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', token_response.data)
+        self.assertIn('refresh', token_response.data)
+
     def test_get_polls_allowed_for_anonymous(self):
         url = reverse('poll-list-create')
         response = self.client.get(url)
@@ -98,7 +160,7 @@ class PollAPITestCase(APITestCase):
     def test_authenticated_user_can_vote_once(self):
         self.client.force_authenticate(user=self.other_user)
 
-        url = reverse('vote-list-create')
+        url = reverse('vote-create')
         data = {
             'poll': self.poll.id,
             'choice': self.choice1.id
@@ -118,7 +180,7 @@ class PollAPITestCase(APITestCase):
 
         self.client.force_authenticate(user=self.other_user)
 
-        url = reverse('vote-list-create')
+        url = reverse('vote-create')
         data = {
             'poll': self.poll.id,
             'choice': self.choice2.id
@@ -143,7 +205,7 @@ class PollAPITestCase(APITestCase):
 
         self.client.force_authenticate(user=self.other_user)
 
-        url = reverse('vote-list-create')
+        url = reverse('vote-create')
         data = {
             'poll': self.poll.id,
             'choice': other_choice.id
@@ -154,7 +216,7 @@ class PollAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_anonymous_cannot_vote(self):
-        url = reverse('vote-list-create')
+        url = reverse('vote-create')
         data = {
             'poll': self.poll.id,
             'choice': self.choice1.id
@@ -312,6 +374,29 @@ class PollAPITestCase(APITestCase):
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         self.assertIn('access', refresh_response.data)
 
+    def test_verify_jwt_token(self):
+        obtain_url = reverse('token_obtain_pair')
+        obtain_response = self.client.post(
+            obtain_url,
+            {
+                'username': 'testuser',
+                'password': 'testpass123'
+            },
+            format='json'
+        )
+
+        self.assertEqual(obtain_response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', obtain_response.data)
+
+        verify_url = reverse('token_verify')
+        verify_response = self.client.post(
+            verify_url,
+            {'token': obtain_response.data['access']},
+            format='json'
+        )
+
+        self.assertEqual(verify_response.status_code, status.HTTP_200_OK)
+
     def test_admin_can_update_any_poll(self):
         admin_user = User.objects.create_user(
             username='adminuser',
@@ -402,7 +487,6 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # --- AGGIORNATO: NUOVI TEST SU SEARCH ---
     def test_poll_list_search_by_question_partial(self):
         url = reverse('poll-list-create') + '?search=past'
         response = self.client.get(url)
@@ -412,7 +496,6 @@ class PollAPITestCase(APITestCase):
         self.assertIn('Pizza o pasta?', questions)
 
     def test_poll_list_search_by_choice_text_partial(self):
-        # Cerchiamo parte del testo di una delle Choice collegate ('Pizz')
         url = reverse('poll-list-create') + '?search=Pizz'
         response = self.client.get(url)
 
@@ -426,3 +509,135 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 0)
+
+    def test_anonymous_can_view_poll_detail(self):
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.poll.id)
+        self.assertEqual(response.data['question'], self.poll.question)
+
+    def test_poll_detail_returns_404_for_missing_poll(self):
+        url = reverse('poll-detail', kwargs={'pk': 9999})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_author_can_delete_own_poll(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Poll.objects.filter(pk=self.poll.pk).exists())
+
+    def test_other_user_cannot_delete_poll(self):
+        self.client.force_authenticate(user=self.other_user)
+
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Poll.objects.filter(pk=self.poll.pk).exists())
+
+    def test_admin_can_delete_any_poll(self):
+        admin_user = User.objects.create_user(
+            username='adminuser_delete',
+            password='adminpass123',
+            is_staff=True
+        )
+
+        self.client.force_authenticate(user=admin_user)
+
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Poll.objects.filter(pk=self.poll.pk).exists())
+
+    def test_poll_list_can_be_filtered_by_created_by(self):
+        Poll.objects.create(
+            question='Sondaggio di altro utente',
+            created_by=self.other_user,
+            is_active=True
+        )
+
+        url = reverse('poll-list-create') + '?created_by=testuser'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        questions = [poll['question'] for poll in response.data['results']]
+        self.assertIn('Pizza o pasta?', questions)
+        self.assertNotIn('Sondaggio di altro utente', questions)
+
+    def test_poll_list_can_be_ordered_by_created_at_ascending(self):
+        first = self.poll
+        second = Poll.objects.create(
+            question='Sondaggio successivo',
+            created_by=self.user,
+            is_active=True
+        )
+
+        url = reverse('poll-list-create') + '?ordering=created_at'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['results'][0]['id'], first.id)
+        self.assertEqual(response.data['results'][1]['id'], second.id)
+
+    def test_poll_list_can_be_ordered_by_created_at_descending(self):
+        first = self.poll
+        second = Poll.objects.create(
+            question='Sondaggio successivo 2',
+            created_by=self.user,
+            is_active=True
+        )
+
+        url = reverse('poll-list-create') + '?ordering=-created_at'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['results'][0]['id'], second.id)
+        self.assertEqual(response.data['results'][1]['id'], first.id)
+
+    def test_cannot_create_poll_without_question(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse('poll-list-create')
+        data = {
+            'is_active': True
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('question', response.data)
+
+    def test_cannot_create_choice_without_text(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse('choice-create')
+        data = {
+            'poll': self.poll.id
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('text', response.data)
+
+    def test_poll_list_page_size_query_param_works(self):
+        for i in range(6, 11):
+            Poll.objects.create(
+                question=f'Sondaggio {i}',
+                created_by=self.user,
+                is_active=True
+            )
+
+        url = reverse('poll-list-create') + '?page_size=3'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 3)

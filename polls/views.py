@@ -1,31 +1,38 @@
-from rest_framework import generics, permissions, filters
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, permissions, filters
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Poll, Vote, Choice
-from .serializers import PollSerializer, VoteSerializer, PollResultSerializer, ChoiceSerializer
-from .permissions import IsAuthorOrAdminOrReadOnly
 from .filters import PollFilter
+from .models import Poll, Vote, Choice
 from .pagination import PollPagination
+from .permissions import IsAuthorOrAdminOrReadOnly
+from .serializers import (
+    PollSerializer,
+    VoteSerializer,
+    PollResultSerializer,
+    ChoiceSerializer,
+    RegisterSerializer,
+)
+
+
+class RegisterAPIView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [AllowAny]
 
 
 class PollListCreateAPIView(generics.ListCreateAPIView):
     queryset = Poll.objects.all().order_by('-created_at')
     serializer_class = PollSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
-    # MODIFICATO: Aggiunto filters.SearchFilter alla lista dei backends
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = PollFilter
     ordering_fields = ['created_at', 'updated_at']
-    pagination_class = PollPagination
-    
-    # MODIFICATO: Configurato i campi per consentire la ricerca parziale su domande e scelte
     search_fields = ['question', 'choices__text']
+    pagination_class = PollPagination
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -34,20 +41,23 @@ class PollListCreateAPIView(generics.ListCreateAPIView):
 class PollRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrAdminOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsAuthorOrAdminOrReadOnly,
+    ]
 
 
 class VoteCreateAPIView(generics.CreateAPIView):
     queryset = Vote.objects.all().order_by('-voted_at')
     serializer_class = VoteSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
 class PollResultsAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
         poll = get_object_or_404(Poll, pk=pk)
@@ -63,7 +73,7 @@ class PollResultsAPIView(APIView):
                 'id': choice.id,
                 'text': choice.text,
                 'votes_count': votes_count,
-                'percentage': round(percentage, 2),
+                'percentage': f'{percentage:.2f}',
             })
 
         data = {
@@ -86,6 +96,8 @@ class ChoiceCreateAPIView(generics.CreateAPIView):
         poll = serializer.validated_data['poll']
 
         if poll.created_by != self.request.user:
-            raise PermissionDenied("Puoi aggiungere scelte solo ai sondaggi che hai creato tu.")
+            raise PermissionDenied(
+                "Puoi aggiungere scelte solo ai sondaggi che hai creato tu."
+            )
 
         serializer.save()

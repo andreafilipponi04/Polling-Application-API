@@ -1,5 +1,11 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+
 from .models import Poll, Choice, Vote
+
+
+User = get_user_model()
 
 
 class ChoiceSerializer(serializers.ModelSerializer):
@@ -23,6 +29,7 @@ class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ['id', 'poll', 'choice', 'user', 'voted_at']
+        read_only_fields = ['user', 'voted_at']
 
     def validate(self, attrs):
         request = self.context.get('request')
@@ -55,3 +62,41 @@ class PollResultSerializer(serializers.Serializer):
     question = serializers.CharField()
     total_votes = serializers.IntegerField()
     choices = ChoiceResultSerializer(many=True)
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        style={'input_type': 'password'},
+        validators=[validate_password]
+    )
+    password2 = serializers.CharField(
+        write_only=True,
+        style={'input_type': 'password'}
+    )
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'password', 'password2']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({
+                'password2': 'Le password non coincidono.'
+            })
+
+        if User.objects.filter(username=attrs['username']).exists():
+            raise serializers.ValidationError({
+                'username': 'Username già esistente.'
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password']
+        )
+        return user
