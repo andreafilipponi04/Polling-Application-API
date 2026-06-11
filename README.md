@@ -4,7 +4,7 @@
 **Project type:** REST API  
 **Framework:** Django + Django REST Framework  
 **Repository:** [https://github.com/andreafilipponi04/Polling-Application-API](https://github.com/andreafilipponi04/Polling-Application-API)  
-**Deployment:** Not deployed
+**Deployment:** [https://polling-application-api.onrender.com](https://polling-application-api.onrender.com)
 
 ## Descrizione
 
