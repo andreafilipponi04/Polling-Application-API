@@ -54,7 +54,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 
 ## Tecnologie usate
 
-- Python
+- Python 3.13
 - Django
 - Django REST Framework
 - SimpleJWT
@@ -82,6 +82,13 @@ Il repository include il database SQLite:
 
 Il database contiene dati demo e account già pronti per testare l’applicazione senza dover creare tutto da zero.
 
+Nel database demo sono presenti:
+- 3 account demo principali
+- 8 sondaggi classici pre-popolati
+- 34 scelte associate ai sondaggi
+- 21 voti già registrati
+- 1 sondaggio chiuso, utile per testare la validazione sui voti
+
 ## Demo accounts
 
 | Username | Password | Ruolo |
@@ -103,8 +110,10 @@ cd Polling-Application-API
 
 #### Opzione consigliata: Anaconda
 
+Il progetto usa Django 6, quindi è consigliato usare Python 3.13.
+
 ```bash
-conda create --name django python=3.10
+conda create --name django python=3.13
 conda activate django
 ```
 
@@ -258,6 +267,7 @@ Authorization: Bearer ACCESS_TOKEN
 | DELETE | `/api/polls/<id>/` | Sì | Owner / Admin | Elimina un sondaggio |
 | GET | `/api/polls/<id>/results/` | No | Anonymous / Authenticated | Mostra risultati e percentuali |
 | GET | `/api/polls/voted/` | Sì | Authenticated | Mostra i sondaggi già votati dall’utente |
+| GET | `/api/profiles/me/` | Sì | Authenticated | Mostra profilo e ruolo dell’utente autenticato |
 | POST | `/api/votes/` | Sì | Authenticated | Registra un voto |
 | POST | `/api/choices/` | Sì | Authenticated | Aggiunge una scelta a un proprio sondaggio |
 | POST | `/api/token/` | No | Anonymous / Authenticated | Ottiene access e refresh token |
@@ -265,6 +275,8 @@ Authorization: Bearer ACCESS_TOKEN
 | POST | `/api/token/verify/` | No | Anonymous / Authenticated | Verifica la validità di un token |
 
 ## Endpoint dettagliati
+
+Negli esempi seguenti, sostituire `POLL_ID`, `CHOICE_ID` e `OTHER_CHOICE_ID` con ID numerici reali restituiti dall’API.
 
 ### 1. Register user
 
@@ -352,7 +364,7 @@ Accesso pubblico.
 Esempio:
 
 ```bash
-http GET http://127.0.0.1:8000/api/polls/1/
+http GET http://127.0.0.1:8000/api/polls/POLL_ID/
 ```
 
 ### 5. Update poll
@@ -373,7 +385,7 @@ Body JSON di esempio:
 Esempio:
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN" question="Domanda aggiornata"
+http PATCH http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS_TOKEN" question="Domanda aggiornata"
 ```
 
 Risposte attese:
@@ -391,7 +403,7 @@ Consentito solo al creatore del sondaggio o all’admin.
 Esempio:
 
 ```bash
-http DELETE http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN"
+http DELETE http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS_TOKEN"
 ```
 
 Risposte attese:
@@ -432,7 +444,7 @@ Esempio risposta:
 Esempio HTTPie:
 
 ```bash
-http GET http://127.0.0.1:8000/api/polls/1/results/
+http GET http://127.0.0.1:8000/api/polls/POLL_ID/results/
 ```
 
 ### 8. Voted polls
@@ -467,7 +479,7 @@ Body JSON di esempio:
 Esempio HTTPie:
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=2
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID choice:=CHOICE_ID
 ```
 
 Validazioni:
@@ -499,7 +511,7 @@ Body JSON di esempio:
 Esempio HTTPie:
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Nuova scelta"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID text="Nuova scelta"
 ```
 
 Possibili risposte:
@@ -507,9 +519,39 @@ Possibili risposte:
 - `403 Forbidden` se il sondaggio non appartiene all’utente
 - `401 Unauthorized` se non autenticato
 
+### 11. My profile
+
+**GET** `/api/profiles/me/`
+
+Richiede autenticazione JWT.
+
+Mostra i dati essenziali del profilo dell’utente autenticato, incluso il ruolo.
+
+Esempio risposta:
+
+```json
+{
+  "id": 1,
+  "username": "user1",
+  "role": "user"
+}
+```
+
+Esempio HTTPie:
+
+```bash
+http GET http://127.0.0.1:8000/api/profiles/me/ Authorization:"Bearer ACCESS_TOKEN"
+```
+
+Possibili risposte:
+- `200 OK`
+- `401 Unauthorized` se non autenticato
+
 ## Workflow completo di test con HTTPie
 
 > Installazione HTTPie: [https://httpie.io/](https://httpie.io/).
+
+Nei comandi che usano `POLL_ID` e `CHOICE_ID`, sostituire questi valori con gli ID numerici restituiti dalle risposte dell’API.
 
 ### 1. Registrare un nuovo utente
 
@@ -525,56 +567,66 @@ http POST http://127.0.0.1:8000/api/token/ username=newuser password="Password12
 
 Copiare il valore di `access` e salvarlo come `ACCESS_TOKEN`.
 
-### 3. Leggere i sondaggi pubblici
+### 3. Verificare il profilo dell’utente autenticato
+
+```bash
+http GET http://127.0.0.1:8000/api/profiles/me/ Authorization:"Bearer ACCESS_TOKEN"
+```
+
+### 4. Leggere i sondaggi pubblici
 
 ```bash
 http GET http://127.0.0.1:8000/api/polls/
 ```
 
-### 4. Creare un nuovo sondaggio
+### 5. Creare un nuovo sondaggio
 
 ```bash
 http POST http://127.0.0.1:8000/api/polls/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo" is_active:=true
 ```
 
-### 5. Aggiungere una scelta al sondaggio
+Annotare il valore `id` restituito nella risposta e usarlo come `POLL_ID`.
+
+### 6. Aggiungere una scelta al sondaggio
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Opzione A"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID text="Opzione A"
 ```
 
 ```bash
-http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 text="Opzione B"
+http POST http://127.0.0.1:8000/api/choices/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID text="Opzione B"
 ```
 
-### 6. Votare
+Annotare l’`id` di una delle scelte create e usarlo come `CHOICE_ID`.
+
+### 7. Votare
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=1
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID choice:=CHOICE_ID
 ```
 
-### 7. Vedere i risultati
+### 8. Vedere i risultati
 
 ```bash
-http GET http://127.0.0.1:8000/api/polls/1/results/
+http GET http://127.0.0.1:8000/api/polls/POLL_ID/results/
 ```
 
-### 8. Vedere i sondaggi già votati
+### 9. Vedere i sondaggi già votati
 
 ```bash
 http GET http://127.0.0.1:8000/api/polls/voted/ Authorization:"Bearer ACCESS_TOKEN"
 ```
 
-### 9. Aggiornare il proprio sondaggio
+### 10. Aggiornare il proprio sondaggio
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo aggiornato"
+http PATCH http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo aggiornato"
 ```
 
-### 10. Eliminare il proprio sondaggio
+### 11. Eliminare il proprio sondaggio
 
 ```bash
-http DELETE http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN"
+http DELETE http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS_TOKEN"
 ```
 
 ## Scenario di test della registrazione
@@ -621,7 +673,7 @@ Risposta attesa:
 ### Caso 1: utente anonimo non può votare
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ poll:=1 choice:=1
+http POST http://127.0.0.1:8000/api/votes/ poll:=POLL_ID choice:=CHOICE_ID
 ```
 
 Risposta attesa:
@@ -637,7 +689,7 @@ http POST http://127.0.0.1:8000/api/token/ username=user2 password=provaprova
 ```
 
 ```bash
-http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer USER2_ACCESS_TOKEN" question="Tentativo non autorizzato"
+http PATCH http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer USER2_ACCESS_TOKEN" question="Tentativo non autorizzato"
 ```
 
 Risposta attesa:
@@ -648,7 +700,7 @@ Risposta attesa:
 Dopo aver già votato una volta:
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=1
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID choice:=CHOICE_ID
 ```
 
 Risposta attesa:
@@ -657,13 +709,13 @@ Risposta attesa:
 ### Caso 4: scelta non appartenente al sondaggio
 
 ```bash
-http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=1 choice:=999
+http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" poll:=POLL_ID choice:=OTHER_CHOICE_ID
 ```
 
 Risposta attesa:
 - `400 Bad Request`
 
-> Sostituire `999` con una `choice` reale appartenente a un altro sondaggio per testare correttamente questa validazione.
+> `OTHER_CHOICE_ID` deve essere l’id di una scelta reale appartenente a un altro sondaggio.
 
 ## Filtri, ricerca, ordinamento e paginazione
 

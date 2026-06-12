@@ -145,6 +145,22 @@ class PollAPITestCase(APITestCase):
         self.poll.refresh_from_db()
         self.assertEqual(self.poll.question, 'Domanda modificata')
 
+    def test_author_can_fully_update_own_poll(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse('poll-detail', kwargs={'pk': self.poll.pk})
+        data = {
+            'question': 'Domanda aggiornata con PUT',
+            'is_active': False
+        }
+
+        response = self.client.put(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.poll.refresh_from_db()
+        self.assertEqual(self.poll.question, 'Domanda aggiornata con PUT')
+        self.assertFalse(self.poll.is_active)
+
     def test_other_user_cannot_update_poll(self):
         self.client.force_authenticate(user=self.other_user)
 
@@ -602,6 +618,21 @@ class PollAPITestCase(APITestCase):
         self.assertEqual(response.data['results'][0]['id'], second.id)
         self.assertEqual(response.data['results'][1]['id'], first.id)
 
+    def test_poll_list_can_be_ordered_by_updated_at_descending(self):
+        second = Poll.objects.create(
+            question='Sondaggio da aggiornare',
+            created_by=self.user,
+            is_active=True
+        )
+        second.question = 'Sondaggio aggiornato'
+        second.save()
+
+        url = reverse('poll-list-create') + '?ordering=-updated_at'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['results'][0]['id'], second.id)
+
     def test_cannot_create_poll_without_question(self):
         self.client.force_authenticate(user=self.user)
 
@@ -665,3 +696,44 @@ class PollAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("poll", response.data)
+
+    def test_authenticated_user_can_view_voted_polls(self):
+        other_poll = Poll.objects.create(
+            question='Sondaggio non votato',
+            created_by=self.user,
+            is_active=True
+        )
+        Choice.objects.create(
+            poll=other_poll,
+            text='Opzione non votata'
+        )
+        Vote.objects.create(
+            poll=self.poll,
+            choice=self.choice1,
+            user=self.other_user
+        )
+
+        self.client.force_authenticate(user=self.other_user)
+
+        url = reverse('voted-polls')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        poll_ids = {poll['id'] for poll in response.data}
+        self.assertIn(self.poll.id, poll_ids)
+        self.assertNotIn(other_poll.id, poll_ids)
+
+    def test_anonymous_cannot_view_voted_polls(self):
+        url = reverse('voted-polls')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_voted_polls_returns_empty_list_when_user_has_not_voted(self):
+        self.client.force_authenticate(user=self.other_user)
+
+        url = reverse('voted-polls')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
