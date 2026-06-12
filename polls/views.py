@@ -101,3 +101,16 @@ class ChoiceCreateAPIView(generics.CreateAPIView):
             )
 
         serializer.save()
+
+
+class VotedPollsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        voted_poll_ids = Vote.objects.filter(
+            user=request.user
+        ).values_list('poll_id', flat=True).distinct()
+
+        polls = Poll.objects.filter(id__in=voted_poll_ids)
+        serializer = PollSerializer(polls, many=True)
+        return Response(serializer.data)
