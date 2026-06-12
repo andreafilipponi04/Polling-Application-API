@@ -25,6 +25,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Blocco del doppio voto sullo stesso sondaggio.
 - Validazione che la scelta votata appartenga davvero al sondaggio selezionato.
 - Creazione di nuove scelte per un sondaggio solo da parte del creatore del sondaggio.
+- Endpoint per visualizzare i sondaggi già votati dall’utente autenticato.
 - Supporto a filtri, ricerca, ordinamento e paginazione sulla lista dei sondaggi.
 
 ## Ruoli e permessi
@@ -45,6 +46,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Può votare una sola volta per ciascun sondaggio.
 - Può aggiungere scelte solo ai sondaggi creati da lui.
 - Può modificare o eliminare solo i propri sondaggi.
+- Può visualizzare i sondaggi che ha già votato.
 
 ### Admin / superuser
 - Può gestire tutti i sondaggi tramite i permessi amministrativi del progetto.
@@ -65,6 +67,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 Polling-Application-API/
 ├── config/
 ├── polls/
+├── profiles/
 ├── db.sqlite3
 ├── manage.py
 ├── requirements.txt
@@ -92,7 +95,7 @@ Il database contiene dati demo e account già pronti per testare l’applicazion
 ### 1. Clonare la repository
 
 ```bash
-git clone https://github.com/andreafilipponi04/Polling-Application-API
+git clone https://github.com/andreafilipponi04/Polling-Application-API.git
 cd Polling-Application-API
 ```
 
@@ -254,6 +257,7 @@ Authorization: Bearer ACCESS_TOKEN
 | PATCH | `/api/polls/<id>/` | Sì | Owner / Admin | Aggiorna parzialmente un sondaggio |
 | DELETE | `/api/polls/<id>/` | Sì | Owner / Admin | Elimina un sondaggio |
 | GET | `/api/polls/<id>/results/` | No | Anonymous / Authenticated | Mostra risultati e percentuali |
+| GET | `/api/polls/voted/` | Sì | Authenticated | Mostra i sondaggi già votati dall’utente |
 | POST | `/api/votes/` | Sì | Authenticated | Registra un voto |
 | POST | `/api/choices/` | Sì | Authenticated | Aggiunge una scelta a un proprio sondaggio |
 | POST | `/api/token/` | No | Anonymous / Authenticated | Ottiene access e refresh token |
@@ -431,7 +435,21 @@ Esempio HTTPie:
 http GET http://127.0.0.1:8000/api/polls/1/results/
 ```
 
-### 8. Create vote
+### 8. Voted polls
+
+**GET** `/api/polls/voted/`
+
+Richiede autenticazione JWT.
+
+Mostra l’elenco dei sondaggi a cui l’utente autenticato ha già votato.
+
+Esempio:
+
+```bash
+http GET http://127.0.0.1:8000/api/polls/voted/ Authorization:"Bearer ACCESS_TOKEN"
+```
+
+### 9. Create vote
 
 **POST** `/api/votes/`
 
@@ -462,7 +480,7 @@ Possibili risposte:
 - `400 Bad Request` se la choice non appartiene al poll
 - `401 Unauthorized` se non autenticato
 
-### 9. Create choice
+### 10. Create choice
 
 **POST** `/api/choices/`
 
@@ -541,13 +559,19 @@ http POST http://127.0.0.1:8000/api/votes/ Authorization:"Bearer ACCESS_TOKEN" p
 http GET http://127.0.0.1:8000/api/polls/1/results/
 ```
 
-### 8. Aggiornare il proprio sondaggio
+### 8. Vedere i sondaggi già votati
+
+```bash
+http GET http://127.0.0.1:8000/api/polls/voted/ Authorization:"Bearer ACCESS_TOKEN"
+```
+
+### 9. Aggiornare il proprio sondaggio
 
 ```bash
 http PATCH http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN" question="Sondaggio demo aggiornato"
 ```
 
-### 9. Eliminare il proprio sondaggio
+### 10. Eliminare il proprio sondaggio
 
 ```bash
 http DELETE http://127.0.0.1:8000/api/polls/1/ Authorization:"Bearer ACCESS_TOKEN"
