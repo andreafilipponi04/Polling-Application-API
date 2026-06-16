@@ -4,6 +4,7 @@ charset-normalizer==3.4.7
 colorama==0.4.6
 defusedxml==0.7.1
 Django==6.0.5
+django-cors-headers==4.9.0
 django-filter==25.2
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
