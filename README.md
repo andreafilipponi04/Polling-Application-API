@@ -1,4 +1,4 @@
-# POLLING APPLICATION API
+# 📊 Polling Application API
 
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
@@ -6,14 +6,14 @@
 **Repository:** [https://github.com/andreafilipponi04/Polling-Application-API](https://github.com/andreafilipponi04/Polling-Application-API)  
 **Deployment:** [https://polling-application-api.onrender.com](https://polling-application-api.onrender.com)
 
-## Descrizione
+## 📖 Descrizione
 
 Questo progetto è una REST API per una **Polling Application** sviluppata con Django REST Framework.  
 L’applicazione permette di creare sondaggi, aggiungere scelte, votare, visualizzare i risultati e gestire i sondaggi in base ai permessi dell’utente autenticato.
 
 L’obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP.
 
-## Funzionalità principali
+## ✨ Funzionalità principali
 
 - Visualizzazione pubblica della lista dei sondaggi.
 - Visualizzazione pubblica del dettaglio di un sondaggio.
@@ -28,7 +28,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Endpoint per visualizzare i sondaggi già votati dall’utente autenticato.
 - Supporto a filtri, ricerca, ordinamento e paginazione sulla lista dei sondaggi.
 
-## Ruoli e permessi
+## 🔐 Ruoli e permessi
 
 ### Anonymous user
 - Può leggere la lista dei sondaggi.
@@ -52,7 +52,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - Può gestire tutti i sondaggi tramite i permessi amministrativi del progetto.
 - Può accedere al pannello admin Django.
 
-## Tecnologie usate
+## 🛠 Tecnologie usate
 
 - Python 3.13
 - Django
@@ -61,7 +61,7 @@ L’obiettivo del progetto è realizzare un back-end API-first con autenticazion
 - django-filter
 - SQLite
 
-## Struttura del progetto
+## 📁 Struttura del progetto
 
 ```text
 Polling-Application-API/
@@ -74,7 +74,7 @@ Polling-Application-API/
 └── README.md
 ```
 
-## Database demo
+## 💾 Database demo
 
 Il repository include il database SQLite:
 
@@ -89,7 +89,7 @@ Nel database demo sono presenti:
 - 21 voti già registrati
 - 1 sondaggio chiuso, utile per testare la validazione sui voti
 
-## Demo accounts
+## 👥 Demo accounts
 
 | Username | Password | Ruolo |
 |---|---|---|
@@ -97,7 +97,7 @@ Nel database demo sono presenti:
 | user1 | provaprova | Authenticated user |
 | user2 | provaprova | Authenticated user |
 
-## Installazione locale
+## 🚀 Installazione locale
 
 ### 1. Clonare la repository
 
@@ -159,7 +159,7 @@ python manage.py runserver
 http://127.0.0.1:8000/
 ```
 
-## Registrazione utenti
+## 📝 Registrazione utenti
 
 L’API espone un endpoint pubblico per la registrazione di nuovi utenti.
 
@@ -188,7 +188,7 @@ Risposta attesa:
 
 Dopo la registrazione, l’utente può ottenere i token JWT tramite `/api/token/`.
 
-## Autenticazione JWT
+## 🔑 Autenticazione JWT
 
 L’API usa autenticazione JWT per gli endpoint protetti.
 
@@ -254,7 +254,7 @@ Header:
 Authorization: Bearer ACCESS_TOKEN
 ```
 
-## Endpoint principali
+## 🛣️ Endpoint principali
 
 | Metodo | Endpoint | Auth | Ruolo | Descrizione |
 |---|---|---|---|---|
@@ -274,7 +274,7 @@ Authorization: Bearer ACCESS_TOKEN
 | POST | `/api/token/refresh/` | No | Anonymous / Authenticated | Rinnova l’access token |
 | POST | `/api/token/verify/` | No | Anonymous / Authenticated | Verifica la validità di un token |
 
-## Endpoint dettagliati
+## 🔍 Endpoint dettagliati
 
 Negli esempi seguenti, sostituire `POLL_ID`, `CHOICE_ID` e `OTHER_CHOICE_ID` con ID numerici reali restituiti dall’API.
 
@@ -547,7 +547,7 @@ Possibili risposte:
 - `200 OK`
 - `401 Unauthorized` se non autenticato
 
-## Workflow completo di test con HTTPie
+## 🧪 Workflow completo di test con HTTPie
 
 > Installazione HTTPie: [https://httpie.io/](https://httpie.io/).
 
@@ -629,7 +629,7 @@ http PATCH http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS
 http DELETE http://127.0.0.1:8000/api/polls/POLL_ID/ Authorization:"Bearer ACCESS_TOKEN"
 ```
 
-## Scenario di test della registrazione
+## 📋 Scenario di test della registrazione
 
 ### Caso 1: registrazione corretta
 
@@ -668,7 +668,7 @@ Risposta attesa:
 - `200 OK`
 - risposta JSON con `refresh` e `access`
 
-## Scenario di test dei permessi
+## 🛡️ Scenario di test dei permessi
 
 ### Caso 1: utente anonimo non può votare
 
@@ -717,7 +717,7 @@ Risposta attesa:
 
 > `OTHER_CHOICE_ID` deve essere l’id di una scelta reale appartenente a un altro sondaggio.
 
-## Filtri, ricerca, ordinamento e paginazione
+## 🎛️ Filtri, ricerca, ordinamento e paginazione
 
 La lista dei sondaggi supporta:
 - filtri definiti in `PollFilter`
@@ -764,7 +764,7 @@ http GET "http://127.0.0.1:8000/api/polls/?page=2&page_size=10"
 http GET "http://127.0.0.1:8000/api/polls/?is_active=true&search=pizza&ordering=-created_at"
 ```
 
-## Status code principali
+## 🚦 Status code principali
 
 | Codice | Significato |
 |---|---|
