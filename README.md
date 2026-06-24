@@ -5,6 +5,7 @@
 **Framework:** Django REST Framework  
 **Repository:** [https://github.com/andreafilipponi04/Polling-Application-API](https://github.com/andreafilipponi04/Polling-Application-API)  
 **Deployment:** [https://polling-application-api.onrender.com](https://polling-application-api.onrender.com)
+> ⚠️ **Nota sul Deployment (Render Free Tier):** L'API è ospitata sul piano gratuito di Render. Se il server non riceve richieste per 15 minuti, entra automaticamente in modalità "sospensione". Di conseguenza, la **prima richiesta**  potrebbe richiedere circa 50-60 secondi per "risvegliare" l'applicazione. Le richieste successive saranno totalmente immediate.
 
 ## 📖 Descrizione
 
