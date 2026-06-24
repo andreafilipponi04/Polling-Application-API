@@ -551,6 +551,9 @@ Possibili risposte:
 
 > Installazione HTTPie: [https://httpie.io/](https://httpie.io/).
 
+> **Nota:** tutti gli esempi HTTPie presenti in questo README sono scritti per il test in locale usando `http://127.0.0.1:8000/`.
+> Per testare l’API online, è sufficiente sostituire l’URL locale con quello deployato: `https://polling-application-api.onrender.com/`.
+
 Nei comandi che usano `POLL_ID` e `CHOICE_ID`, sostituire questi valori con gli ID numerici restituiti dalle risposte dell’API.
 
 ### 1. Registrare un nuovo utente
