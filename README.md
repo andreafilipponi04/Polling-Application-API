@@ -2,7 +2,7 @@
 
 **Studente:** Andrea Filipponi  
 **Project type:** REST API  
-**Framework:** Django + Django REST Framework  
+**Framework:** Django REST Framework  
 **Repository:** [https://github.com/andreafilipponi04/Polling-Application-API](https://github.com/andreafilipponi04/Polling-Application-API)  
 **Deployment:** [https://polling-application-api.onrender.com](https://polling-application-api.onrender.com)
 
