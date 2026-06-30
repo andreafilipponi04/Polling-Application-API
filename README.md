@@ -14,14 +14,6 @@ L’applicazione permette di creare sondaggi, aggiungere scelte, votare, visuali
 
 L’obiettivo del progetto è realizzare un back-end API-first con autenticazione JWT, validazione JSON, permessi coerenti e workflow di test riproducibile tramite comandi HTTP.
 
-## 🖥️ Frontend Client
-
-Per una gestione visiva dei sondaggi tramite interfaccia grafica, è disponibile un client frontend dedicato salvato in una repository separata.
-
-👉 **[https://github.com/andreafilipponi04/Polling-Application-Frontend](https://github.com/andreafilipponi04/Polling-Application-Frontend)**
-
-> ⚠️ **Nota:** Il frontend **non viene deployato online** ed è pensato esclusivamente per l'utilizzo in locale (aprendo il file `index.html` nel browser). Tutte le istruzioni specifiche per l'avvio e la configurazione del client sono disponibili nel `README.md` all'interno della sua repository.
-
 ## ✨ Funzionalità principali
 
 - Visualizzazione pubblica della lista dei sondaggi.
